@@ -24,7 +24,7 @@ health:
   enabled: true
   readinessInitialDelay: 60
   livenessInitialDelay: 30
-  path: /health
+  path: /
 hpa:
   enabled: false
   minReplicas: 2
@@ -92,4 +92,4 @@ istio:
   virtualService:
     customHeaders: {}
 
-squad: psm-foo
+owner: foo

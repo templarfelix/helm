@@ -17,7 +17,7 @@ health:
   tcp: true
   readinessInitialDelay: 60
   livenessInitialDelay: 30
-  path: /health
+  path: /
 hpa:
   enabled: true
   minReplicas: 2

@@ -10,7 +10,7 @@ metadata:
     helm.sh/chart: {{ include "rollout-Canary.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
-    squad: {{ .Values.squad | required "Squad attribute is required. E.g: squad: psm-foo" }}
+    owner: {{ .Values.owner | required "owner attribute is required. E.g: owner: foo" }}
 spec:
   selector:
     istio: internalingressgateway
