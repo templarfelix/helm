@@ -134,15 +134,15 @@ spec:
         labels:
           role: canary
           version: canary
-      # analysis:
-      #   templates:
-      #   - templateName: {{ include "rollout-Canary.fullname" . }}-rules
-      #   {{- if .Values.strategy.canary.analysis.templates }}
-      #   {{- range $templateName := .Values.strategy.canary.analysis.templates }}
-      #   - templateName: {{ $templateName }}
-      #   {{- end }}
-      #   {{- end }}
-      #   startingStep: 1
+      analysis:
+        templates:
+        - templateName: {{ include "rollout-Canary.fullname" . }}-rules
+        {{- if .Values.strategy.canary.analysis.templates }}
+        {{- range $templateName := .Values.strategy.canary.analysis.templates }}
+        - templateName: {{ $templateName }}
+        {{- end }}
+        {{- end }}
+        startingStep: 1
       steps:
       {{- .Values.strategy.canary.steps | toYaml | nindent 6 }}
       trafficRouting:
