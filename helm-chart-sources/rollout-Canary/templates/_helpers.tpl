@@ -29,8 +29,8 @@ Create the name of the service account to use
 */}}
 {{- define "rollout-Canary.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}
-    {{ default (include "rollout-Canary.fullname" .) .Values.serviceAccount.name }}
+    {{ default (include "rollout-Canary.fullname" .) .Values.serviceAccount.name | lower }}
 {{- else -}}
-    {{ default "default" .Values.serviceAccount.name }}
+    {{ default "default" .Values.serviceAccount.name | lower }}
 {{- end -}}
 {{- end -}}
