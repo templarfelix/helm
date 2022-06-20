@@ -1,0 +1,165 @@
+{
+   "$schema": "https://json-schema.org/draft-07/schema#",
+   "properties": {
+      "environment": {
+         "type": "string"
+      },
+      "domain": {
+         "description": "domain of application",
+         "type": "string"
+      },
+      "replicas": {
+         "description": "replicas",
+         "minimum": 1,
+         "type": "integer"
+      },
+      "revisionHistoryLimit": {
+         "description": "revisionHistoryLimit",
+         "minimum": 1,
+         "type": "integer"
+      },
+      "image": {
+         "description": "image settings",
+         "properties": {
+            "registry": {
+               "description": "registry",
+               "type": "string"
+            },
+            "repository": {
+               "description": "repository",
+               "type": "string"
+            },
+            "tag": {
+               "description": "tag",
+               "type": "string"
+            },
+            "imagePullPolicy": {
+               "description": "imagePullPolicy",
+               "type": "string",
+               "enum": [
+                  "Always",
+                  "IfNotPresent",
+                  "Never"
+               ]
+            }
+         },
+         "required": [
+            "registry",
+            "repository",
+            "tag",
+            "imagePullPolicy"
+         ],
+         "type": "object"
+      },
+      "ports": {
+         "description": "ports",
+         "properties": {
+            "http": {
+               "description": "Port",
+               "minimum": 0,
+               "type": "integer"
+            }
+         },
+         "type": "object"
+      },
+      "health": {
+         "description": "health",
+         "properties": {
+            "enabled": {
+               "description": "health enabled?",
+               "type": "boolean"
+            },
+            "path": {
+               "description": "path url",
+               "type": "string"
+            }
+         },
+         "type": "object"
+      },
+      "hpa": {
+         "description": "hpa",
+         "properties": {
+            "enabled": {
+               "description": "hpa enabled?",
+               "type": "boolean"
+            },
+            "minReplicas": {
+               "description": "minReplicas",
+               "type": "integer"
+            },
+            "maxReplicas": {
+               "description": "maxReplicas",
+               "type": "integer"
+            }
+         },
+         "type": "object"
+      },
+      "resources": {
+         "description": "resources",
+         "properties": {
+            "limits": {
+               "description": "limits",
+               "properties": {
+                  "cpu": {
+                     "description": "cpu limit",
+                     "type": "string"
+                  },
+                  "memory": {
+                     "description": "memory limit",
+                     "type": "string"
+                  }
+               },
+               "type": "object"
+            },
+            "requests": {
+               "description": "requests",
+               "properties": {
+                  "cpu": {
+                     "description": "cpu requests",
+                     "type": "string"
+                  },
+                  "memory": {
+                     "description": "memory requests",
+                     "type": "string"
+                  }
+               },
+               "type": "object"
+            }
+         },
+         "type": "object"
+      },
+      "strategy": {
+         "description": "strategy",
+         "properties": {
+            "canary": {
+               "description": "canary",
+               "properties": {
+                  "templates": {
+                     "description": "templates",
+                     "type": "array"
+                  }
+               },
+               "type": "object"
+            }
+         },
+         "type": "object"
+      },
+      "envFrom": {
+         "description": "envFrom"
+      },
+      "owner": {
+         "description": "owner Owner",
+         "type": "string"
+      }
+   },
+   "required": [
+      "environment",
+      "replicas",
+      "version",
+      "revisionHistoryLimit",
+      "image",
+      "owner"
+   ],
+   "title": "Values",
+   "type": "object"
+}

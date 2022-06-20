@@ -27,3 +27,9 @@ deploy: ## call all targets
 	make lint
 	make package 
 	make index
+
+operator-sdk-init: ## operator sdk init 
+	operator-sdk init --plugins helm --domain templarfelix.com --group microservice --version v1alpha1 --kind RolloutDeployment --helm-chart-repo https://templarfelix.github.io/helm/  --helm-chart rollout --helm-chart-version=0.0.1
+	make docker-build docker-push IMG="templarfelix/operator:0.0.1"
+	make deploy IMG="templarfelix/operator:0.0.1"
+	

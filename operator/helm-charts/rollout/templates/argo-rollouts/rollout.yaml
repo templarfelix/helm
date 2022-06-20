@@ -1,0 +1,158 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "rollout-Canary.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  annotations:
+    reloader.stakater.com/search: "true"
+    version: "{{ .Values.image.tag }}"
+    build: "{{ .Values.image.codefresh }}"
+  labels:
+    app: {{ include "rollout-Canary.fullname" . }}
+    app.kubernetes.io/name: {{ include "rollout-Canary.fullname" . }}
+    helm.sh/chart: {{ include "rollout-Canary.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    owner: {{ .Values.owner | required "owner attribute is required. E.g: owner: foo" }}
+spec:
+  replicas: {{ .Values.replicas | default 1 }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      app: {{ include "rollout-Canary.fullname" . }}
+      app.kubernetes.io/name: {{ include "rollout-Canary.fullname" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "rollout-Canary.fullname" . }}
+        app.kubernetes.io/name: {{ include "rollout-Canary.fullname" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        owner: {{ .Values.owner | required "owner attribute is required. E.g: owner: foo" }}
+      annotations:
+        # istio
+        {{- if (( .Values.integrations ).istio ) }}
+        sidecar.istio.io/inject: "{{ .Values.integrations.istio }}"
+        {{- end }}
+        sidecar.istio.io/rewriteAppHTTPProbers: "true"
+        # custom annotations
+        {{- if .Values.pod.annotations }}
+        {{ toYaml .Values.pod.annotations  }}
+        {{- end }}
+        version: "{{ .Values.image.tag }}"
+        build: "{{ .Values.image.codefresh }}"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 999
+        runAsUser: 999
+      serviceAccountName: {{ template "rollout-Canary.serviceAccountName" . }}
+      containers:
+      - name: {{ include "rollout-Canary.fullname" . }}
+        image: {{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.imagePullPolicy }}
+        ports:
+        {{- range $portName, $portNumber := .Values.ports }}
+        - name: {{ $portName }}
+          containerPort: {{ $portNumber }}
+          protocol: TCP
+        {{- end }}
+        {{- if .Values.health.enabled }}  
+        readinessProbe:
+          {{- if .Values.health.tcp}}
+          tcpSocket:
+            port: {{ .Values.ports.grpc | default 1234 }}
+          {{- else }}
+          httpGet:
+            path: {{ .Values.health.path }}
+            port: {{ .Values.health.port | default .Values.ports.http }}
+            httpHeaders:
+            - name: readinessProbe-call
+              value: kubernetes
+          {{- end }}
+          initialDelaySeconds: {{ .Values.health.readinessInitialDelay | default "60" }}
+          timeoutSeconds: {{ .Values.health.timeoutSeconds | default "1" }}
+          periodSeconds: 30
+        livenessProbe:
+          {{- if .Values.health.tcp}}
+          tcpSocket:
+            port: {{ .Values.ports.grpc | default 1234 }}
+          {{- else }}
+          httpGet:
+            path: {{ .Values.health.path }}
+            port: {{ .Values.health.port | default .Values.ports.http }}
+            httpHeaders:
+            - name: livenessProbe-call
+              value: kubernetes
+          {{- end }}
+          initialDelaySeconds: {{ .Values.health.livenessInitialDelay | default "30" }}
+          periodSeconds: 5
+          timeoutSeconds: {{ .Values.health.timeoutSeconds | default "1" }}
+          successThreshold: 1
+        {{- end}}
+        resources:
+          {{- if .Values.resources.limits }}
+          limits:
+            cpu: {{ .Values.resources.limits.cpu | default "4000m" }}
+            memory: {{ .Values.resources.limits.memory | default "1024Mi" }}
+          {{- end }}
+          requests:
+          {{- if .Values.resources.requests }}
+            cpu: {{ .Values.resources.requests.cpu | default "1000m" }}
+            memory: {{ .Values.resources.requests.memory | default "512Mi" }}
+          {{ else }}
+            cpu: 100m
+            memory: 256Mi
+          {{- end }}
+        env:
+          - name: SYSTEM_VERSION
+            value: "{{ .Values.image.tag }}"
+          - name: BUILD
+            value: "{{ .Values.image.codefresh }}"
+          - name: ENVIRONMENT_PROFILE
+            value: "{{.Values.environment}}"
+          - name: OTEL_RESOURCE_ATTRIBUTES
+            value: "service.name={{ include "rollout-Canary.fullname" . }}, service.version=0.0.1" 
+          - name: OTEL_PROPAGATORS
+            value: "tracecontext, baggage"
+          {{- if .Values.env }}
+          {{- .Values.env | toYaml | nindent 10 }}
+          {{- end }}
+        {{- if .Values.envFrom }}
+        envFrom:
+        {{- .Values.envFrom | toYaml | nindent 12 }}
+        {{- end }}
+  strategy:
+    canary:
+      maxSurge: "100%"
+      maxUnavailable: 0
+      stableMetadata:
+        labels:
+          role: stable
+          version: stable
+      canaryMetadata:
+        labels:
+          role: canary
+          version: canary
+      analysis:
+        templates:
+        - templateName: {{ include "rollout-Canary.fullname" . }}-rules
+        {{- if .Values.strategy.canary.analysis.templates }}
+        {{- range $templateName := .Values.strategy.canary.analysis.templates }}
+        - templateName: {{ $templateName }}
+        {{- end }}
+        {{- end }}
+        startingStep: 1
+      steps:
+      {{- .Values.strategy.canary.steps | toYaml | nindent 6 }}
+      trafficRouting:
+        istio:
+          virtualService: 
+            name: {{ include "rollout-Canary.fullname" . }}
+            # namespace: {{ .Release.Namespace }}
+            routes:
+            - {{ include "rollout-Canary.fullname" . }}
+          destinationRule:
+            name: {{ include "rollout-Canary.fullname" . }}
+            canarySubsetName: canary
+            stableSubsetName: stable

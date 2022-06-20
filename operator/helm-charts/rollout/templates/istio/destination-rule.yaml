@@ -1,0 +1,29 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: {{ include "rollout-Canary.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  annotations: {}
+  labels:
+    app: {{ include "rollout-Canary.fullname" . }}
+    app.kubernetes.io/name: {{ include "rollout-Canary.fullname" . }}
+    helm.sh/chart: {{ include "rollout-Canary.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    owner: {{ .Values.owner | required "owner attribute is required. E.g: owner: foo" }}
+spec:
+  host: {{ include "rollout-Canary.fullname" . }}
+  subsets:
+  - name: canary   
+    labels:     
+      app: {{ include "rollout-Canary.fullname" . }}
+      app.kubernetes.io/name: {{ include "rollout-Canary.fullname" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  - name: stable   
+    labels:
+      app: {{ include "rollout-Canary.fullname" . }}
+      app.kubernetes.io/name: {{ include "rollout-Canary.fullname" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL

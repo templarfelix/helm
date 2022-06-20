@@ -1,0 +1,73 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ include "rollout-Canary.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  annotations: {}
+  labels:
+    app: {{ include "rollout-Canary.fullname" . }}
+    app.kubernetes.io/name: {{ include "rollout-Canary.fullname" . }}
+    helm.sh/chart: {{ include "rollout-Canary.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    owner: {{ .Values.owner | required "owner attribute is required. E.g: owner: foo" }}
+spec:
+  hosts:
+  - {{ include "rollout-Canary.fullname" . }}.{{ .Values.domain }}
+  - {{ include "rollout-Canary.fullname" . }}.{{ .Values.environment }}.{{ .Values.domain }}
+  - {{ include "rollout-Canary.fullname" . }}.internal.{{ .Values.domain }}
+  - {{ include "rollout-Canary.fullname" . }}
+  {{- if .Values.virtualService }}
+  {{- range .Values.virtualService.extraHosts }}
+  - {{ . }}
+  {{- end }}
+  {{- end }}
+  gateways:
+  {{- if .Values.virtualService }}
+  {{- range .Values.virtualService.extraGateways }}
+  - {{ . }}
+  {{- end }}
+  {{- end }}
+  - ext/istio-gateway-private
+  - prod/istio-gateway-private
+  - mesh
+  #- {{ include "rollout-Canary.fullname" . }}-internal-gateway
+  http:
+    - name: {{ include "rollout-Canary.fullname" . }}-header
+      match:
+      - uri:
+          prefix: /
+        headers:
+          x-version:
+            exact: {{ .Values.image.tag }}
+      route:
+        - destination:
+            host: {{ include "rollout-Canary.fullname" . }}
+            subset: canary
+          weight: 100
+    {{- range $key, $value := .Values.istio.virtualService.customHeaders }}
+    - name:  {{ include "rollout-Canary.fullname" $ }}-{{$key}}-header
+      match:
+      - uri:
+          prefix: /
+        headers:
+          {{$key}}:
+            exact:  {{$value}}
+      route:
+        - destination:
+            host: {{  include "rollout-Canary.fullname" $ }}
+          weight: 100
+    {{- end }}
+    - name: {{ include "rollout-Canary.fullname" . }}
+      match:
+      - uri:
+          prefix: /
+      route:
+        - destination:
+            host: {{ include "rollout-Canary.fullname" . }}
+            subset: stable 
+          weight: 100
+        - destination:
+            host: {{ include "rollout-Canary.fullname" . }}
+            subset: canary
+          weight: 0

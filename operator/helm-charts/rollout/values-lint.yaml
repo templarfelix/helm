@@ -1,0 +1,67 @@
+# rollout lint values
+fullnameOverride: "full"
+environment: production
+domain: templarfelix.com
+replicas: 3
+revisionHistoryLimit: 10
+image: 
+  registry: docker.io
+  repository: argoproj/rollouts-demo
+  tag: yellow
+  imagePullPolicy: Always
+ports:
+  http: 8080
+  grpc: 4321
+health:
+  enabled: true
+  tcp: true
+  readinessInitialDelay: 60
+  livenessInitialDelay: 30
+  path: /
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+resources:
+  limits:
+    cpu: 200m
+    memory: 328Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+strategy:
+  canary: 
+    analysis:
+      templates: 
+        - custom-AnalysisTemplate
+    steps:
+      - setWeight: 0
+      - setCanaryScale:
+            replicas: 2
+      - pause: {}
+      - setWeight: 10
+      - pause:
+          duration: "20m"
+      - setWeight: 80
+      - pause:
+          duration: "20m"
+      - setWeight: 100
+      - pause:
+          duration: "10m"
+envFrom: 
+- configMapRef:
+    name: special-config
+- secretRef:
+     name: special-config
+serviceAccount:
+  create: true
+  annotations: 
+      eks.amazonaws.com/role-arn: arn:aws:iam::AWS_ACCOUNT_ID:role/{REPO}-role-sa-east-1
+  name: 
+pod:
+  annotations: 
+      iam.amazonaws.com/role: "{REPO}-role-sa-east-1" 
+istio:
+  virtualService:
+    customHeaders:
+      teste: 10
