@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "rollout-Canary.fullname" . }}-rules
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    app: {{ include "rollout-Canary.fullname" . }}
+    app.kubernetes.io/name: {{ include "rollout-Canary.fullname" . }}
+    helm.sh/chart: {{ include "rollout-Canary.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  args:
+  - name: service-name
+    value: {{ include "rollout-Canary.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  - name: environment
+    value: {{.Values.environment}}
+  metrics:
+  - name: success-rate
+    interval: 5m
+    successCondition: len(result) == 0 || result[0] >= 0.99
+    failureLimit: 3
+    provider:
+      prometheus:
+        address: https://xx:8080/api/prom
+        query: |
+          sum(irate(
+            istio_requests_total{reporter="source",env="{{`{{args.environment}}`}}",destination_service_name=~"{{`{{args.service-name}}`}}",destination_version="canary",response_code!~"5.*"}[5m]
+          )) / 
+          sum(irate(
+            istio_requests_total{reporter="source",env="{{`{{args.environment}}`}}",destination_service_name=~"{{`{{args.service-name}}`}}",destination_version="canary"}[5m]
+          ))
+  - name: stable-vs-canary-success-rate
+    interval: 5m
+    successCondition: len(result) == 0 || result <= 0
+    failureLimit: 3
+    provider:
+      prometheus:
+        address: https://xx:8080/api/prom
+        query: |
+          sum(irate(
+            istio_requests_total{reporter="source",env="{{`{{args.environment}}`}}",destination_service_name=~"{{`{{args.service-name}}`}}",destination_version="canary",response_code!~"5.*"}[5m]
+          )) / 
+          sum(irate(
+            istio_requests_total{reporter="source",env="{{`{{args.environment}}`}}",destination_service_name=~"{{`{{args.service-name}}`}}",destination_version="canary"}[5m]
+          ))
+          -
+          sum(irate(
+            istio_requests_total{reporter="source",env="{{`{{args.environment}}`}}",destination_service_name=~"{{`{{args.service-name}}`}}",destination_version="stable",response_code!~"5.*"}[5m]
+          )) / 
+          sum(irate(
+            istio_requests_total{reporter="source",env="{{`{{args.environment}}`}}",destination_service_name=~"{{`{{args.service-name}}`}}",destination_version="stable"}[5m]
+          ))
