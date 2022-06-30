@@ -13,7 +13,7 @@ metadata:
     owner: {{ .Values.owner | required "owner attribute is required. E.g: owner: foo" }}
 spec:
   selector:
-    istio: internalingressgateway
+    istio: ingressgateway
   servers:
   - hosts:
     - '*.{{ .Values.domain }}'
