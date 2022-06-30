@@ -22,7 +22,7 @@ spec:
     failureLimit: 3
     provider:
       prometheus:
-        address: https://xx:8080/api/prom
+        address: https://prometheus-k8s.monitoring.svc.cluster.local:8080/api/prom
         query: |
           sum(irate(
             istio_requests_total{reporter="source",env="{{`{{args.environment}}`}}",destination_service_name=~"{{`{{args.service-name}}`}}",destination_version="canary",response_code!~"5.*"}[5m]
@@ -36,7 +36,7 @@ spec:
     failureLimit: 3
     provider:
       prometheus:
-        address: https://xx:8080/api/prom
+        address: https://prometheus-k8s.monitoring.svc.cluster.local:8080/api/prom
         query: |
           sum(irate(
             istio_requests_total{reporter="source",env="{{`{{args.environment}}`}}",destination_service_name=~"{{`{{args.service-name}}`}}",destination_version="canary",response_code!~"5.*"}[5m]

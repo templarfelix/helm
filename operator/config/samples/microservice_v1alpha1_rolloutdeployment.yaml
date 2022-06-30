@@ -7,7 +7,7 @@ spec:
   domain: templarfelix.com
   env: {}
   envFrom: {}
-  environment: integration
+  environment: sandbox
   health:
     enabled: true
     livenessInitialDelay: 30

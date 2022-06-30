@@ -31,8 +31,8 @@ spec:
         owner: {{ .Values.owner | required "owner attribute is required. E.g: owner: foo" }}
       annotations:
         # istio
-        {{- if (( .Values.integrations ).istio ) }}
-        sidecar.istio.io/inject: "{{ .Values.integrations.istio }}"
+        {{- if (( .Values.sandboxs ).istio ) }}
+        sidecar.istio.io/inject: "{{ .Values.sandboxs.istio }}"
         {{- end }}
         sidecar.istio.io/rewriteAppHTTPProbers: "true"
         # custom annotations

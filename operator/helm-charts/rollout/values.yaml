@@ -1,6 +1,6 @@
 # rollout template configs
 #fullnameOverride: ""
-environment: integration
+environment: sandbox
 domain: templarfelix.com
 # virtualService:
 #   extraHosts:
