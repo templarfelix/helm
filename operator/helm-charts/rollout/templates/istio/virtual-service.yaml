@@ -28,10 +28,8 @@ spec:
   - {{ . }}
   {{- end }}
   {{- end }}
-  - ext/istio-gateway-private
-  - prod/istio-gateway-private
+  - {{ include "rollout-Canary.fullname" . }}-internal-gateway
   - mesh
-  #- {{ include "rollout-Canary.fullname" . }}-internal-gateway
   http:
     - name: {{ include "rollout-Canary.fullname" . }}-header
       match:
